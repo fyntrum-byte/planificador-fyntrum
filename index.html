@@ -88,6 +88,51 @@ textarea.brief{min-height:96px;line-height:1.55;font-size:12.5px}
 select{cursor:pointer;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink-3) 50%),linear-gradient(135deg,var(--ink-3) 50%,transparent 50%);background-position:calc(100% - 14px) 15px,calc(100% - 9px) 15px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:28px}
 
 /* ---------- contenidos ---------- */
+/* ---------- alerta de evento próximo ---------- */
+.alerta{margin-bottom:16px;display:flex;flex-direction:column;gap:8px}
+.al-row{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  background:rgba(232,93,4,.07);border:1px solid rgba(232,93,4,.35);
+  border-left:3px solid var(--orange);border-radius:7px;padding:11px 14px;
+}
+.al-row.hoy{background:rgba(46,204,113,.07);border-color:rgba(46,204,113,.35);border-left-color:var(--green)}
+.al-tag{
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;
+  color:var(--orange);border:1px solid currentColor;border-radius:20px;
+  padding:3px 9px;flex:0 0 auto;font-weight:700;
+}
+.al-row.hoy .al-tag{color:var(--green)}
+.al-txt{font-size:13px;flex:1;min-width:200px;line-height:1.4}
+.al-txt b{font-weight:700}
+.al-meta{color:var(--ink-3);font-family:'Space Mono',monospace;font-size:11px}
+.al-hint{font-size:11.5px;color:var(--ink-2);font-style:italic}
+
+/* ---------- eventos ---------- */
+.evs{border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:18px;background:var(--panel-2)}
+.evs-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.evs-empty{font-size:12px;color:var(--ink-3);padding:6px 0}
+.btn.sm{padding:6px 12px;font-size:10px}
+.ev{border:1px solid var(--line-2);border-radius:7px;margin-bottom:9px;background:var(--panel-3);overflow:hidden}
+.ev-top{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer}
+.ev-hora{font-family:'Space Mono',monospace;font-size:12px;color:var(--orange);flex:0 0 auto;font-weight:700}
+.ev-tipo{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.1em;padding:3px 7px;border-radius:20px;border:1px solid currentColor;flex:0 0 auto}
+.ev-tit{flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-tit.vacio{color:var(--ink-3)}
+.ev-arrow{color:var(--ink-3);font-size:12px;flex:0 0 auto}
+.ev-body{display:none;padding:0 12px 12px;border-top:1px solid var(--line)}
+.ev-body.open{display:block;padding-top:12px}
+.ev-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+.ev-grid2{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:10px;margin-bottom:10px}
+.ev-mx{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+.ev-mx .mx-grid{grid-template-columns:repeat(4,1fr)}
+.ev-del{background:none;border:1px solid var(--line-2);color:var(--ink-3);border-radius:5px;padding:5px 10px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em}
+.ev-del:hover{border-color:var(--red);color:var(--red)}
+.ev-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.plats{display:flex;gap:8px}
+.plat{display:flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:10px;color:var(--ink-2);cursor:pointer}
+.plat input{width:auto;margin:0;cursor:pointer;accent-color:var(--orange)}
+.day .evdot{position:absolute;top:8px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--blue)}
+
 .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .slot{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .shead{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--line)}
@@ -140,7 +185,7 @@ select{cursor:pointer;appearance:none;background-image:linear-gradient(45deg,tra
 .btn.main:hover{background:#FF6B14;border-color:#FF6B14}
 .tpl .msg{font-family:'Space Mono',monospace;font-size:11px;color:var(--green)}
 
-@media (max-width:1100px){.mx-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:1100px){.mx-grid{grid-template-columns:repeat(3,1fr)}.ev-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:900px){
   .dhead{grid-template-columns:1fr}
   .slots{grid-template-columns:1fr}
@@ -152,6 +197,7 @@ select{cursor:pointer;appearance:none;background-image:linear-gradient(45deg,tra
   .counts{gap:18px}
   .foot{flex-direction:column;align-items:stretch}
   .mx-grid{grid-template-columns:repeat(2,1fr)}
+  .ev-grid,.ev-grid2{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -260,6 +306,28 @@ const OWNERS=['Sin asignar','Kevin','Bryan','Los dos'];
 const DAYNAMES=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const MONTHS=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const SLOTS=[1,2,3];
+const TIPOS=[
+  {k:'operativa',n:'Operativa',c:'#E85D04'},
+  {k:'clase',n:'Clase',c:'#3A7BD5'},
+  {k:'meet',n:'Meet',c:'#2ECC71'}
+];
+const EV_ESTADOS=['planificado','anunciado','en vivo','terminado'];
+const EV_MX=[
+  {k:'asistentes',n:'Asistentes'},
+  {k:'comentarios',n:'Coment.'},
+  {k:'leads',n:'Leads'},
+  {k:'ventas',n:'Ventas'}
+];
+const PLATS=[
+  {k:'tt_kevin',n:'TikTok Kevin'},
+  {k:'tt_bryan',n:'TikTok Bryan'},
+  {k:'yt_fyntrum',n:'YouTube Fyntrum'},
+  {k:'meet',n:'Google Meet'}
+];
+// Los eventos siempre son de la empresa, aunque se transmitan
+// desde cuentas personales. Por eso no se filtran por espacio.
+const EV_ESPACIO='fyntrum';
+let evAbiertos={};
 
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function parseISO(s){const p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
@@ -281,11 +349,11 @@ let abiertas={};   // qué paneles de métricas están desplegados
 function blankPub(){const o={link:'',medido_en:''};METRICS.forEach(m=>o[m.k]='');return o;}
 function blankSlot(){
   const pubs={};NETS.forEach(n=>pubs[n.k]=blankPub());
-  return {tema:'',desc:'',formato:'Video',responsable:'Sin asignar',estado:'pendiente',guion:'',by:'',at:'',pubs:pubs};
+  return {tema:'',desc:'',formato:'Video',responsable:'Sin asignar',estado:'pendiente',guion:'',convoca:'',by:'',at:'',pubs:pubs};
 }
 function blank(){
   const s={};SLOTS.forEach(i=>s[i]=blankSlot());
-  return {service:'',arm:'Inversiones',audience:'',slots:s};
+  return {service:'',arm:'Inversiones',audience:'',slots:s,eventos:[]};
 }
 function day(k){if(!data[k])data[k]=blank();return data[k];}
 function flag(cls,txt){
@@ -340,12 +408,13 @@ document.getElementById('out').onclick=async()=>{
 async function cargar(){
   flag('busy','Cargando');
   const desde=iso(start),hasta=iso(shift(start,7));
-  const [d,c,p]=await Promise.all([
+  const [d,c,p,e]=await Promise.all([
     sb.from('dias').select('*').eq('espacio',espacio).gte('fecha',desde).lte('fecha',hasta),
     sb.from('contenidos').select('*').eq('espacio',espacio).gte('fecha',desde).lte('fecha',hasta),
-    sb.from('publicaciones').select('*').eq('espacio',espacio).gte('fecha',desde).lte('fecha',hasta)
+    sb.from('publicaciones').select('*').eq('espacio',espacio).gte('fecha',desde).lte('fecha',hasta),
+    sb.from('eventos').select('*').eq('espacio',EV_ESPACIO).gte('fecha',desde).lte('fecha',hasta).order('hora_inicio')
   ]);
-  const err=d.error||c.error||p.error;
+  const err=d.error||c.error||p.error||e.error;
   if(err){flag('err','No se pudo cargar: '+err.message);render();return;}
   data={};
   d.data.forEach(r=>{
@@ -358,8 +427,13 @@ async function cargar(){
     Object.assign(data[r.fecha].slots[r.slot],{
       tema:r.tema||'',desc:r.descripcion||'',formato:r.formato||'Video',
       responsable:r.responsable||'Sin asignar',estado:r.estado||'pendiente',
-      guion:r.guion||'',by:r.actualizado_por||'',at:r.actualizado_en||''
+      guion:r.guion||'',convoca:r.convoca_a?String(r.convoca_a):'',
+      by:r.actualizado_por||'',at:r.actualizado_en||''
     });
+  });
+  e.data.forEach(r=>{
+    if(!data[r.fecha])data[r.fecha]=blank();
+    data[r.fecha].eventos.push(normEv(r));
   });
   p.data.forEach(r=>{
     if(!data[r.fecha])data[r.fecha]=blank();
@@ -370,6 +444,24 @@ async function cargar(){
   flag('ok','Listo');
   render();
 }
+
+function normEv(r){
+  const o={id:r.id,fecha:r.fecha,tipo:r.tipo||'clase',titulo:r.titulo||'',descripcion:r.descripcion||'',
+    hora_inicio:r.hora_inicio||'',hora_fin:r.hora_fin||'',plataformas:r.plataformas||'',
+    servicio:r.servicio||'',responsable:r.responsable||'Sin asignar',estado:r.estado||'planificado',
+    link:r.link||'',notas:r.notas||'',by:r.actualizado_por||''};
+  EV_MX.forEach(m=>o[m.k]=(r[m.k]===null||r[m.k]===undefined)?'':String(r[m.k]));
+  return o;
+}
+function eventosSemana(){
+  const out=[];
+  for(let i=0;i<8;i++){
+    const k=iso(shift(start,i));
+    if(data[k]&&data[k].eventos)data[k].eventos.forEach(e=>out.push(e));
+  }
+  return out;
+}
+function buscarEv(id){return eventosSemana().find(e=>String(e.id)===String(id));}
 
 function debounce(key,fn){clearTimeout(timers[key]);timers[key]=setTimeout(fn,600);}
 function num(v){const n=parseInt(String(v).replace(/\D/g,''),10);return isNaN(n)?null:n;}
@@ -391,6 +483,7 @@ async function guardarSlot(fecha,slot){
   const {error}=await sb.from('contenidos').upsert({
     fecha,espacio,slot,tema:s.tema,descripcion:s.desc,formato:s.formato,
     responsable:s.responsable,estado:s.estado,guion:s.guion,
+    convoca_a:s.convoca?Number(s.convoca):null,
     actualizado_por:usuario,actualizado_en:new Date().toISOString()
   });
   if(error){flag('err','No se guardó: '+error.message);return;}
@@ -410,12 +503,50 @@ async function guardarPub(fecha,slot,red){
   flag(error?'err':'ok',error?('No se guardó: '+error.message):'Guardado');
 }
 
+async function guardarEvento(id){
+  const ev=buscarEv(id);
+  if(!ev)return;
+  flag('busy','Guardando');
+  const fila={id:ev.id,fecha:ev.fecha,espacio:EV_ESPACIO,tipo:ev.tipo,titulo:ev.titulo,
+    descripcion:ev.descripcion,hora_inicio:ev.hora_inicio,hora_fin:ev.hora_fin,
+    plataformas:ev.plataformas,servicio:ev.servicio,responsable:ev.responsable,
+    estado:ev.estado,link:ev.link,notas:ev.notas,
+    actualizado_por:usuario,actualizado_en:new Date().toISOString()};
+  EV_MX.forEach(m=>fila[m.k]=num(ev[m.k]));
+  const {error}=await sb.from('eventos').upsert(fila);
+  flag(error?'err':'ok',error?('No se guardó: '+error.message):'Guardado');
+}
+
+async function crearEvento(){
+  flag('busy','Creando');
+  const {data:r,error}=await sb.from('eventos').insert({
+    fecha:sel,espacio:EV_ESPACIO,tipo:'clase',hora_inicio:'20:00',
+    actualizado_por:usuario
+  }).select().single();
+  if(error){flag('err','No se pudo crear: '+error.message);return;}
+  day(sel).eventos.push(normEv(r));
+  evAbiertos[r.id]=true;
+  flag('ok','Evento creado');
+  renderDays();renderDetail();
+}
+
+async function borrarEvento(id){
+  if(!confirm('¿Borrar este evento?'))return;
+  flag('busy','Borrando');
+  const {error}=await sb.from('eventos').delete().eq('id',id);
+  if(error){flag('err','No se pudo borrar: '+error.message);return;}
+  day(sel).eventos=day(sel).eventos.filter(e=>String(e.id)!==String(id));
+  flag('ok','Evento borrado');
+  renderDays();renderDetail();
+}
+
 /* ---------- tiempo real ---------- */
 function suscribir(){
   canal=sb.channel('plan')
     .on('postgres_changes',{event:'*',schema:'public',table:'contenidos'},entrante)
     .on('postgres_changes',{event:'*',schema:'public',table:'publicaciones'},entrante)
     .on('postgres_changes',{event:'*',schema:'public',table:'dias'},entrante)
+    .on('postgres_changes',{event:'*',schema:'public',table:'eventos'},()=>cargar())
     .subscribe();
 }
 function entrante(payload){
@@ -490,7 +621,9 @@ function renderDays(){
     const d=shift(start,i),k=iso(d),v=data[k];
     const b=document.createElement('button');
     b.className='day'+(k===sel?' on':'')+(k===TODAY?' now':'')+(i===7?' tail':'');
-    b.innerHTML='<div class="dw">'+DAYNAMES[d.getDay()]+'</div>'+
+    const tieneEv=v&&v.eventos&&v.eventos.length;
+    b.innerHTML=(tieneEv?'<span class="evdot"></span>':'')+
+      '<div class="dw">'+DAYNAMES[d.getDay()]+'</div>'+
       '<div class="dn">'+d.getDate()+'</div>'+
       '<div class="svc">'+(v&&v.service?esc(v.service):'<span style="color:#3A3E48">Sin servicio</span>')+'</div>'+
       '<div class="dots">'+SLOTS.map(s=>{
@@ -521,8 +654,101 @@ function renderDetail(){
       '<div class="fld"><label>Público objetivo</label>'+
         '<textarea class="grow" id="f-audience" rows="2" placeholder="Quién es y qué le duele">'+esc(d.audience)+'</textarea></div>'+
     '</div>'+
+    alertaHTML()+
+    eventosHTML(d)+
     '<div class="slots">'+SLOTS.map(s=>slotHTML(d.slots[s],s)).join('')+'</div>';
   enlazar();
+}
+
+function alertaHTML(){
+  // Solo en la pestaña de empresa: el contenido personal se planifica aparte.
+  if(espacio!=='fyntrum')return '';
+  const base=parseISO(sel);
+  const prox=[];
+  eventosSemana().forEach(e=>{
+    const dias=Math.round((parseISO(e.fecha)-base)/86400000);
+    if(dias>=0&&dias<=3)prox.push({e:e,dias:dias});
+  });
+  if(!prox.length)return '';
+  prox.sort((a,b)=>a.dias-b.dias);
+  return '<div class="alerta">'+prox.slice(0,3).map(function(x){
+    const e=x.e,dias=x.dias;
+    const t=TIPOS.find(y=>y.k===e.tipo)||TIPOS[1];
+    const d=parseISO(e.fecha);
+    const cuando=dias===0?'EVENTO HOY':dias===1?'EVENTO MAÑANA':'EVENTO EN '+dias+' DÍAS';
+    const hint=dias===0
+      ? 'Recordatorio de última hora en Stories y en el chat.'
+      : dias===1
+      ? 'Última llamada. El contenido de hoy debe convocar.'
+      : 'El contenido de hoy debe apuntar a este evento.';
+    return '<div class="al-row'+(dias===0?' hoy':'')+'">'+
+      '<span class="al-tag">'+cuando+'</span>'+
+      '<span class="al-txt"><b>'+esc(e.titulo||'Sin título')+'</b> '+
+        '<span class="al-meta">· '+t.n+' · '+DAYNAMES[d.getDay()]+' '+d.getDate()+
+        (e.hora_inicio?' · '+esc(e.hora_inicio):'')+'</span></span>'+
+      '<span class="al-hint">'+hint+'</span>'+
+    '</div>';
+  }).join('')+'</div>';
+}
+
+function eventosHTML(d){
+  const evs=d.eventos||[];
+  return '<div class="evs">'+
+    '<div class="evs-head"><div class="label">Eventos en vivo del día'+
+      (espacio!=='fyntrum'?' <span style="color:var(--orange)">· siempre de Fyntrum</span>':'')+'</div>'+
+      '<button class="btn sm" id="addEv">+ AGREGAR EVENTO</button></div>'+
+    (evs.length?evs.map(evHTML).join(''):'<div class="evs-empty">Sin eventos programados este día.</div>')+
+  '</div>';
+}
+
+function evHTML(ev){
+  const t=TIPOS.find(x=>x.k===ev.tipo)||TIPOS[1];
+  const open=evAbiertos[ev.id];
+  const plats=(ev.plataformas||'').split(',').filter(Boolean);
+  const hora=ev.hora_inicio||'--:--';
+  return '<div class="ev">'+
+    '<div class="ev-top" data-ev-tog="'+ev.id+'">'+
+      '<div class="ev-hora">'+esc(hora)+'</div>'+
+      '<div class="ev-tipo" style="color:'+t.c+'">'+t.n.toUpperCase()+'</div>'+
+      '<div class="ev-tit'+(ev.titulo?'':' vacio')+'">'+esc(ev.titulo||'Sin título')+'</div>'+
+      '<div class="ev-arrow">'+(open?'▴':'▾')+'</div>'+
+    '</div>'+
+    '<div class="ev-body'+(open?' open':'')+'">'+
+      '<div class="ev-grid2">'+
+        '<div class="fld"><label>Título del evento</label>'+
+          '<input data-ev="'+ev.id+'" data-f="titulo" value="'+esc(ev.titulo)+'" placeholder="Cómo se anuncia"></div>'+
+        '<div class="fld"><label>Tipo</label><select data-ev="'+ev.id+'" data-f="tipo">'+
+          TIPOS.map(x=>'<option value="'+x.k+'"'+(x.k===ev.tipo?' selected':'')+'>'+x.n+'</option>').join('')+'</select></div>'+
+        '<div class="fld"><label>Estado</label><select data-ev="'+ev.id+'" data-f="estado">'+
+          EV_ESTADOS.map(x=>'<option'+(x===ev.estado?' selected':'')+'>'+x+'</option>').join('')+'</select></div>'+
+      '</div>'+
+      '<div class="ev-grid">'+
+        '<div class="fld"><label>Inicio</label><input type="time" data-ev="'+ev.id+'" data-f="hora_inicio" value="'+esc(ev.hora_inicio)+'"></div>'+
+        '<div class="fld"><label>Fin</label><input type="time" data-ev="'+ev.id+'" data-f="hora_fin" value="'+esc(ev.hora_fin)+'"></div>'+
+        '<div class="fld"><label>Responsable</label><select data-ev="'+ev.id+'" data-f="responsable">'+opts(OWNERS,ev.responsable)+'</select></div>'+
+        '<div class="fld"><label>Servicio que empuja</label><input data-ev="'+ev.id+'" data-f="servicio" value="'+esc(ev.servicio)+'" placeholder="Qué se vende"></div>'+
+      '</div>'+
+      '<div class="fld" style="margin-bottom:10px"><label>Estructura y notas</label>'+
+        '<textarea data-ev="'+ev.id+'" data-f="descripcion" placeholder="Bloques por minuto, qué se explica, dónde va la oferta">'+esc(ev.descripcion)+'</textarea></div>'+
+      '<div class="ev-foot">'+
+        '<div class="plats">'+PLATS.map(pl=>
+          '<label class="plat"><input type="checkbox" data-ev="'+ev.id+'" data-plat="'+pl.k+'"'+(plats.includes(pl.k)?' checked':'')+'>'+pl.n+'</label>'
+        ).join('')+'</div>'+
+        '<button class="ev-del" data-ev-del="'+ev.id+'">BORRAR EVENTO</button>'+
+      '</div>'+
+      '<div class="fld" style="margin-top:10px"><label>Link de la transmisión</label>'+
+        '<div class="link-row"><input data-ev="'+ev.id+'" data-f="link" value="'+esc(ev.link)+'" placeholder="Link de YouTube o TikTok">'+
+        (ev.link?'<a class="ico live" href="'+esc(ev.link)+'" target="_blank" rel="noopener">↗</a>':'<span class="ico">↗</span>')+
+        '</div></div>'+
+      '<div class="ev-mx"><div class="label" style="margin-bottom:8px">Resultado del evento</div>'+
+        '<div class="mx-grid">'+EV_MX.map(m=>
+          '<div class="fld"><label>'+m.n+'</label>'+
+          '<input inputmode="numeric" data-ev="'+ev.id+'" data-f="'+m.k+'" value="'+esc(ev[m.k])+'" placeholder="—"></div>'
+        ).join('')+'</div>'+
+        '<div class="fld" style="margin-top:10px"><label>Qué funcionó y qué no</label>'+
+          '<textarea data-ev="'+ev.id+'" data-f="notas" style="min-height:60px" placeholder="Para repetir lo que pegó">'+esc(ev.notas)+'</textarea></div>'+
+      '</div>'+
+    '</div></div>';
 }
 
 function slotHTML(s,i){
@@ -543,6 +769,14 @@ function slotHTML(s,i){
         STATES.map(x=>'<option value="'+x.k+'"'+(x.k===s.estado?' selected':'')+'>'+x.n+'</option>').join('')+'</select></div>'+
       '<div class="fld"><label>Guion o notas</label>'+
         '<textarea data-s="'+i+'" data-f="guion" placeholder="Gancho, desarrollo, cierre y llamada a la acción">'+esc(s.guion)+'</textarea></div>'+
+      '<div class="fld"><label>Convoca al evento</label><select data-s="'+i+'" data-f="convoca">'+
+        '<option value="">Ninguno</option>'+
+        eventosSemana().map(e=>{
+          const d2=parseISO(e.fecha);
+          const et=(e.titulo||'Sin título').slice(0,42);
+          return '<option value="'+e.id+'"'+(String(e.id)===String(s.convoca)?' selected':'')+'>'+
+            DAYNAMES[d2.getDay()]+' '+d2.getDate()+' · '+esc(et)+'</option>';
+        }).join('')+'</select></div>'+
       '<div class="pubs"><div class="label">Publicación y métricas</div>'+
         NETS.map(n=>pubHTML(s.pubs[n.k],i,n)).join('')+
       '</div>'+
@@ -602,6 +836,56 @@ function enlazar(){
       day(sel).slots[i].pubs[red][f]=el.value;
       debounce('pub-'+sel+'-'+i+'-'+red,()=>guardarPub(sel,i,red));
       if(f==='link'||METRICS.some(m=>m.k===f))renderStatus();
+    };
+  });
+
+  const add=document.getElementById('addEv');
+  if(add)add.onclick=crearEvento;
+
+  box.querySelectorAll('[data-ev-tog]').forEach(el=>{
+    el.onclick=()=>{
+      const id=el.dataset.evTog;
+      evAbiertos[id]=!evAbiertos[id];
+      renderDetail();
+    };
+  });
+
+  box.querySelectorAll('[data-ev-del]').forEach(b=>{
+    b.onclick=e=>{e.stopPropagation();borrarEvento(b.dataset.evDel);};
+  });
+
+  box.querySelectorAll('[data-ev][data-f]').forEach(el=>{
+    el.oninput=el.onchange=()=>{
+      const id=el.dataset.ev,f=el.dataset.f;
+      const ev=buscarEv(id);
+      if(!ev)return;
+      ev[f]=el.value;
+      debounce('ev-'+id,()=>guardarEvento(id));
+      if(f==='titulo'||f==='hora_inicio'||f==='tipo'){
+        const card=el.closest('.ev');
+        if(f==='titulo'){
+          const t=card.querySelector('.ev-tit');
+          t.textContent=ev.titulo||'Sin título';
+          t.classList.toggle('vacio',!ev.titulo);
+        }
+        if(f==='hora_inicio')card.querySelector('.ev-hora').textContent=ev.hora_inicio||'--:--';
+        if(f==='tipo'){
+          const x=TIPOS.find(y=>y.k===ev.tipo);
+          const el2=card.querySelector('.ev-tipo');
+          el2.textContent=x.n.toUpperCase();el2.style.color=x.c;
+        }
+      }
+    };
+  });
+
+  box.querySelectorAll('[data-plat]').forEach(el=>{
+    el.onchange=()=>{
+      const id=el.dataset.ev,ev=buscarEv(id);
+      if(!ev)return;
+      const set=new Set((ev.plataformas||'').split(',').filter(Boolean));
+      el.checked?set.add(el.dataset.plat):set.delete(el.dataset.plat);
+      ev.plataformas=[...set].join(',');
+      debounce('ev-'+id,()=>guardarEvento(id));
     };
   });
 
@@ -744,9 +1028,9 @@ document.getElementById('tplCopy').onclick=async()=>{
 };
 
 /* ================= NAVEGACIÓN ================= */
-document.getElementById('prev').onclick=()=>{start=shift(start,-7);sel=iso(start);abiertas={};cargar();};
-document.getElementById('next').onclick=()=>{start=shift(start,7);sel=iso(start);abiertas={};cargar();};
-document.getElementById('today').onclick=()=>{start=mondayOf(todayDate());sel=TODAY;abiertas={};cargar();};
+document.getElementById('prev').onclick=()=>{start=shift(start,-7);sel=iso(start);abiertas={};evAbiertos={};cargar();};
+document.getElementById('next').onclick=()=>{start=shift(start,7);sel=iso(start);abiertas={};evAbiertos={};cargar();};
+document.getElementById('today').onclick=()=>{start=mondayOf(todayDate());sel=TODAY;abiertas={};evAbiertos={};cargar();};
 document.getElementById('reset').onclick=async()=>{
   const aviso = espacio==='fyntrum'
     ? 'Se borra la planificación de Fyntrum de esta semana para los dos. ¿Seguro?'
@@ -754,6 +1038,7 @@ document.getElementById('reset').onclick=async()=>{
   if(!confirm(aviso))return;
   flag('busy','Borrando');
   const desde=iso(start),hasta=iso(shift(start,7));
+  await sb.from('eventos').delete().eq('espacio',EV_ESPACIO).gte('fecha',desde).lte('fecha',hasta);
   await sb.from('publicaciones').delete().eq('espacio',espacio).gte('fecha',desde).lte('fecha',hasta);
   await sb.from('contenidos').delete().eq('espacio',espacio).gte('fecha',desde).lte('fecha',hasta);
   const {error}=await sb.from('dias').delete().eq('espacio',espacio).gte('fecha',desde).lte('fecha',hasta);
@@ -771,7 +1056,7 @@ function cambiarEspacio(nuevo){
   document.querySelector('.brand .sub').textContent = personal
     ? 'Contenido personal · '+usuario
     : 'Panel de contenido';
-  abiertas={}; data={};
+  abiertas={};evAbiertos={};data={};
   cargar();
 }
 document.getElementById('tabFyn').onclick=()=>cambiarEspacio('fyntrum');
