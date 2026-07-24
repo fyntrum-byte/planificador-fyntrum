@@ -88,6 +88,28 @@ textarea.brief{min-height:96px;line-height:1.55;font-size:12.5px}
 select{cursor:pointer;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink-3) 50%),linear-gradient(135deg,var(--ink-3) 50%,transparent 50%);background-position:calc(100% - 14px) 15px,calc(100% - 9px) 15px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:28px}
 
 /* ---------- contenidos ---------- */
+/* ---------- pendientes ---------- */
+.pends{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:20px;overflow:hidden}
+.pends-head{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none}
+.pends-head:hover{background:var(--panel-2)}
+.pends-count{font-family:'Space Mono',monospace;font-size:12px;color:var(--orange);font-weight:700}
+.pends-count.done{color:var(--green)}
+.pends-prog{flex:1;height:4px;border-radius:2px;background:var(--line);overflow:hidden;max-width:220px}
+.pends-prog i{display:block;height:100%;background:var(--green);transition:width .3s}
+.pends-arrow{color:var(--ink-3);font-size:12px;margin-left:auto}
+.pends-body{display:none;padding:0 18px 16px;border-top:1px solid var(--line)}
+.pends-body.open{display:block;padding-top:14px}
+.pend{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.pend:last-of-type{border-bottom:0}
+.pend input[type=checkbox]{width:17px;height:17px;flex:0 0 auto;cursor:pointer;accent-color:var(--green);margin:0}
+.pend .ptxt{border:0;background:transparent;padding:4px 0;font-size:13px}
+.pend .ptxt:focus{outline:none;border-bottom:1px solid var(--orange)}
+.pend.ok .ptxt{color:var(--ink-3);text-decoration:line-through}
+.pend select{width:auto;flex:0 0 auto;padding:5px 26px 5px 9px;font-size:11px;font-family:'Space Mono',monospace;background-position:calc(100% - 12px) 12px,calc(100% - 7px) 12px}
+.pend-add{display:flex;gap:9px;margin-top:12px;align-items:center}
+.pend-add input{font-size:13px}
+.pends-empty{font-size:12px;color:var(--ink-3);padding:4px 0 10px}
+
 /* ---------- alerta de evento próximo ---------- */
 .alerta{margin-bottom:16px;display:flex;flex-direction:column;gap:8px}
 .al-row{
@@ -260,6 +282,7 @@ select{cursor:pointer;appearance:none;background-image:linear-gradient(45deg,tra
     <div class="bar" id="bar"></div>
   </div>
 
+  <div class="pends" id="pends"></div>
   <div class="days" id="days"></div>
   <div class="detail" id="detail"></div>
 
@@ -339,6 +362,8 @@ const PLATS=[
 // desde cuentas personales. Por eso no se filtran por espacio.
 const EV_ESPACIO='fyntrum';
 let evAbiertos={};
+let pendientes=[];
+let pendsOpen=true;
 
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function parseISO(s){const p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
@@ -425,6 +450,11 @@ async function cargar(){
     sb.from('publicaciones').select('*').eq('espacio',espacio).gte('fecha',desde).lte('fecha',hasta),
     sb.from('eventos').select('*').eq('espacio',EV_ESPACIO).gte('fecha',desde).lte('fecha',hasta).order('hora_inicio')
   ]);
+  const pd=await sb.from('pendientes').select('*').eq('semana',iso(start)).order('id');
+  pendientes=pd.error?[]:pd.data.map(r=>({
+    id:r.id,texto:r.texto||'',hecho:!!r.hecho,
+    responsable:r.responsable||'Sin asignar',by:r.actualizado_por||''
+  }));
   const err=d.error||c.error||p.error||e.error;
   if(err){flag('err','No se pudo cargar: '+err.message);render();return;}
   data={};
@@ -528,6 +558,100 @@ async function guardarEvento(id){
   flag(error?'err':'ok',error?('No se guardó: '+error.message):'Guardado');
 }
 
+async function crearPendiente(texto){
+  const t=String(texto||'').trim();
+  if(!t)return;
+  flag('busy','Guardando');
+  const {data:r,error}=await sb.from('pendientes').insert({
+    semana:iso(start),texto:t,responsable:'Sin asignar',actualizado_por:usuario
+  }).select().single();
+  if(error){flag('err','No se pudo crear: '+error.message);return;}
+  pendientes.push({id:r.id,texto:r.texto,hecho:false,responsable:r.responsable,by:usuario});
+  flag('ok','Agregado');
+  renderPendientes();
+  const inp=document.getElementById('pendNew');
+  if(inp){inp.value='';inp.focus();}
+}
+
+async function guardarPendiente(id){
+  const x=pendientes.find(p=>String(p.id)===String(id));
+  if(!x)return;
+  flag('busy','Guardando');
+  const {error}=await sb.from('pendientes').update({
+    texto:x.texto,hecho:x.hecho,responsable:x.responsable,
+    actualizado_por:usuario,actualizado_en:new Date().toISOString()
+  }).eq('id',id);
+  flag(error?'err':'ok',error?('No se guardó: '+error.message):'Guardado');
+}
+
+async function borrarPendiente(id){
+  flag('busy','Borrando');
+  const {error}=await sb.from('pendientes').delete().eq('id',id);
+  if(error){flag('err','No se pudo borrar: '+error.message);return;}
+  pendientes=pendientes.filter(p=>String(p.id)!==String(id));
+  flag('ok','Borrado');
+  renderPendientes();
+}
+
+function renderPendientes(){
+  const box=document.getElementById('pends');
+  // Los pendientes son solo de la empresa
+  if(espacio!=='fyntrum'){box.style.display='none';box.innerHTML='';return;}
+  box.style.display='block';
+  const hechos=pendientes.filter(p=>p.hecho).length;
+  const total=pendientes.length;
+  const pct=total?(hechos/total*100):0;
+  const listo=total>0&&hechos===total;
+
+  box.innerHTML=
+    '<div class="pends-head" id="pendsTog">'+
+      '<span class="label">Pendientes de la semana</span>'+
+      '<span class="pends-count'+(listo?' done':'')+'">'+hechos+'/'+total+'</span>'+
+      '<span class="pends-prog"><i style="width:'+pct+'%"></i></span>'+
+      '<span class="pends-arrow">'+(pendsOpen?'▴':'▾')+'</span>'+
+    '</div>'+
+    '<div class="pends-body'+(pendsOpen?' open':'')+'">'+
+      (total?pendientes.map(x=>
+        '<div class="pend'+(x.hecho?' ok':'')+'">'+
+          '<input type="checkbox" data-pd="'+x.id+'" data-f="hecho"'+(x.hecho?' checked':'')+'>'+
+          '<input class="ptxt" data-pd="'+x.id+'" data-f="texto" value="'+esc(x.texto)+'">'+
+          '<select data-pd="'+x.id+'" data-f="responsable">'+opts(OWNERS,x.responsable)+'</select>'+
+          '<button class="mini" data-pd-del="'+x.id+'" title="Borrar">🗑</button>'+
+        '</div>'
+      ).join(''):'<div class="pends-empty">Sin pendientes esta semana.</div>')+
+      '<div class="pend-add">'+
+        '<input id="pendNew" placeholder="Escribe un pendiente y pulsa Enter">'+
+        '<button class="btn sm" id="pendAdd">AGREGAR</button>'+
+      '</div>'+
+    '</div>';
+
+  document.getElementById('pendsTog').onclick=()=>{pendsOpen=!pendsOpen;renderPendientes();};
+  const add=()=>crearPendiente(document.getElementById('pendNew').value);
+  document.getElementById('pendAdd').onclick=add;
+  document.getElementById('pendNew').onkeydown=ev=>{if(ev.key==='Enter')add();};
+
+  box.querySelectorAll('[data-pd][data-f]').forEach(el=>{
+    const id=el.dataset.pd,f=el.dataset.f;
+    const x=pendientes.find(p=>String(p.id)===String(id));
+    if(!x)return;
+    if(f==='hecho'){
+      el.onchange=()=>{
+        x.hecho=el.checked;
+        guardarPendiente(id);
+        renderPendientes();
+      };
+    }else{
+      el.oninput=el.onchange=()=>{
+        x[f]=el.value;
+        debounce('pd-'+id,()=>guardarPendiente(id));
+      };
+    }
+  });
+  box.querySelectorAll('[data-pd-del]').forEach(b=>{
+    b.onclick=()=>borrarPendiente(b.dataset.pdDel);
+  });
+}
+
 async function limpiarSlot(i){
   if(!confirm('¿Vaciar el Contenido '+i+' de este día?\n\nSe borran tema, descripción, guion, links y métricas.'))return;
   flag('busy','Borrando');
@@ -583,6 +707,10 @@ function suscribir(){
     .on('postgres_changes',{event:'*',schema:'public',table:'publicaciones'},entrante)
     .on('postgres_changes',{event:'*',schema:'public',table:'dias'},entrante)
     .on('postgres_changes',{event:'*',schema:'public',table:'eventos'},()=>cargar())
+    .on('postgres_changes',{event:'*',schema:'public',table:'pendientes'},p=>{
+      if(p.new&&p.new.actualizado_por===usuario)return;
+      cargar();
+    })
     .subscribe();
 }
 function entrante(payload){
@@ -618,7 +746,7 @@ function render(){
   const end=shift(start,7);
   document.getElementById('range').textContent=
     'LUN '+start.getDate()+' '+MONTHS[start.getMonth()]+' → LUN '+end.getDate()+' '+MONTHS[end.getMonth()]+' '+end.getFullYear();
-  renderStatus();renderDays();renderDetail();
+  renderStatus();renderPendientes();renderDays();renderDetail();
 }
 
 function allSlots(){
