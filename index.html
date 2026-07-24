@@ -314,9 +314,17 @@ async function entrar(){
   const {error}=await sb.auth.signInWithPassword({email,password:pass});
   btn.disabled=false; btn.textContent='ENTRAR';
   if(error){
-    err.textContent = error.message.includes('Invalid')
-      ? 'Correo o contraseña incorrectos.'
-      : 'No se pudo entrar: '+error.message;
+    console.error('Login:',error);
+    const m=error.message||'';
+    if(m.includes('Invalid login credentials')){
+      err.innerHTML='Supabase rechazó el acceso.<br>Revisa en Authentication → Users que la cuenta exista y esté confirmada.';
+    }else if(m.includes('Email not confirmed')){
+      err.innerHTML='La cuenta existe pero el correo no está confirmado.<br>Confírmala desde Authentication → Users.';
+    }else if(m.includes('Failed to fetch')||m.includes('NetworkError')){
+      err.innerHTML='No hay conexión con Supabase.<br>Revisa la URL del proyecto en el código.';
+    }else{
+      err.textContent=m;
+    }
     return;
   }
   await abrir();
@@ -599,14 +607,17 @@ async function cargarPlantilla(txt){
       if(c[3])d.audience=c[3];
     }
   });
-  if(!dias.size)return {nd:0,np:0};
+  if(!dias.size)return {ok:false,motivo:'formato'};
   flag('busy','Guardando la semana');
   const filasDia=[...dias].map(f=>({
     fecha:f, servicio:data[f].service, brazo:data[f].arm,
     publico:data[f].audience, actualizado_en:new Date().toISOString()
   }));
   const e1=await sb.from('dias').upsert(filasDia);
-  if(e1.error){flag('err','No se guardó: '+e1.error.message);return {nd:0,np:0};}
+  if(e1.error){
+    flag('err','No se guardó: '+e1.error.message);
+    return {ok:false,motivo:'guardado',msg:e1.error.message};
+  }
   const filasPieza=piezas.map(([f,red])=>{
     const p=data[f].pieces[red];
     return {fecha:f,red,tema:p.topic,formato:p.format,responsable:p.owner,
@@ -615,10 +626,13 @@ async function cargarPlantilla(txt){
   });
   if(filasPieza.length){
     const e2=await sb.from('piezas').upsert(filasPieza);
-    if(e2.error){flag('err','No se guardó: '+e2.error.message);return {nd:dias.size,np:0};}
+    if(e2.error){
+      flag('err','No se guardó: '+e2.error.message);
+      return {ok:false,motivo:'guardado',msg:e2.error.message};
+    }
   }
   flag('ok','Guardado');
-  return {nd:dias.size,np:piezas.length};
+  return {ok:true,nd:dias.size,np:piezas.length};
 }
 
 function exportarPlantilla(){
@@ -649,8 +663,18 @@ document.getElementById('tplBtn').onclick=()=>{
 document.getElementById('tplLoad').onclick=async()=>{
   if(!tplTxt.value.trim()){say('El cuadro está vacío. Pega la planificación primero.');return;}
   const r=await cargarPlantilla(tplTxt.value);
-  if(!r.nd){say('No se reconoció ninguna fecha. Cada día empieza con día/mes.');return;}
+  if(!r.ok){
+    if(r.motivo==='formato'){
+      tplMsg.style.color='var(--red)';
+      say('No se reconoció ninguna fecha. Cada día empieza con día/mes.');
+    }else{
+      tplMsg.style.color='var(--red)';
+      say('El texto se leyó bien, pero Supabase rechazó el guardado: '+r.msg);
+    }
+    return;
+  }
   render();
+  tplMsg.style.color='var(--green)';
   say('Cargados '+r.nd+' días y '+r.np+' piezas.');
 };
 document.getElementById('tplCopy').onclick=async()=>{
