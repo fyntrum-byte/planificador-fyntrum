@@ -474,6 +474,17 @@ const L_ESTADOS=[
   {k:'compro',n:'Compró',c:'#2ECC71'},
   {k:'no_compro',n:'No compró',c:'#E74C3C'}
 ];
+const CANALES=[
+  'Sin definir',
+  'Evento en vivo',
+  'Contenido orgánico',
+  'Pauta · video',
+  'Pauta · post',
+  'Prospección fría',
+  'Referido',
+  'Comunidad',
+  'Otro'
+];
 const SERVICIOS=['Sin definir','Membresía 299','Copy patrimonial 250','Mentoría 599','Gestión de portafolios','PAMM','Copy trading','Landing Express','Presencia Profesional','Sistema a la medida','Capacitación IA','Empresarial','Legal'];
 
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -1077,7 +1088,8 @@ function renderSemana(){
 function normLead(r){
   let tq=[];
   try{tq=JSON.parse(r.toques||'[]');}catch(e){tq=[];}
-  return {id:r.id,nombre:r.nombre||'',contacto:r.contacto||'',origen:r.origen||'',
+  return {id:r.id,nombre:r.nombre||'',contacto:r.contacto||'',
+    canal:r.canal||'Sin definir',origen:r.origen||'',
     servicio:r.servicio||'Sin definir',estado:r.estado||'nuevo',toques:Array.isArray(tq)?tq:[],
     proximo:r.proximo||'',notas:r.notas||'',responsable:r.responsable||'Sin asignar',
     by:r.actualizado_por||''};
@@ -1124,7 +1136,7 @@ async function guardarLead(id){
   if(!l)return;
   flag('busy','Guardando');
   const {error}=await sb.from('leads').update({
-    nombre:l.nombre,contacto:l.contacto,origen:l.origen,servicio:l.servicio,
+    nombre:l.nombre,contacto:l.contacto,canal:l.canal,origen:l.origen,servicio:l.servicio,
     estado:l.estado,toques:JSON.stringify(l.toques),proximo:l.proximo||null,
     notas:l.notas,responsable:l.responsable,
     actualizado_por:usuario,actualizado_en:new Date().toISOString()
@@ -1172,10 +1184,11 @@ function leadHTML(l){
       '<div class="fld"><label>Contacto</label>'+
         '<input data-ld="'+l.id+'" data-f="contacto" value="'+esc(l.contacto)+'" placeholder="WhatsApp o correo"></div>'+
       '<div class="duo">'+
-        '<div class="fld"><label>De dónde vino</label>'+
-          '<input list="origenes" data-ld="'+l.id+'" data-f="origen" value="'+esc(l.origen)+'" placeholder="Evento o pieza"></div>'+
+        '<div class="fld"><label>Canal</label><select data-ld="'+l.id+'" data-f="canal">'+opts(CANALES,l.canal)+'</select></div>'+
         '<div class="fld"><label>Servicio de interés</label><select data-ld="'+l.id+'" data-f="servicio">'+opts(SERVICIOS,l.servicio)+'</select></div>'+
       '</div>'+
+      '<div class="fld"><label>Cuál exactamente</label>'+
+        '<input list="origenes" data-ld="'+l.id+'" data-f="origen" value="'+esc(l.origen)+'" placeholder="Qué evento, qué pieza o qué campaña"></div>'+
       '<div class="toques">'+
         '<div class="toques-h"><span class="label">Acercamientos</span>'+
           '<span class="toques-n'+(nt>=5?' lleno':'')+'">'+nt+' de 5</span></div>'+
@@ -1194,6 +1207,35 @@ function leadHTML(l){
       '<div class="fld"><label>Notas</label>'+
         '<textarea data-ld="'+l.id+'" data-f="notas" placeholder="Qué dijo, qué le preocupa, qué quedó pendiente">'+esc(l.notas)+'</textarea></div>'+
     '</div></div>';
+}
+
+function canalesHTML(){
+  if(!leads.length)return '';
+  const usados=[...new Set(leads.map(l=>l.canal||'Sin definir'))];
+  const filas=usados.map(cn=>{
+    const g=leads.filter(l=>(l.canal||'Sin definir')===cn);
+    const compro=g.filter(l=>l.estado==='compro').length;
+    const no=g.filter(l=>l.estado==='no_compro').length;
+    const activos=g.length-compro-no;
+    const cerrados=compro+no;
+    const tasa=cerrados?((compro/cerrados)*100).toFixed(0)+'%':'—';
+    return {cn:cn,t:g.length,compro:compro,no:no,activos:activos,tasa:tasa,ord:compro};
+  }).sort((a,b)=>b.compro-a.compro||b.t-a.t);
+
+  return '<div class="wk-sec">Rendimiento por canal</div>'+
+    '<div class="wk-wrap" style="margin-bottom:20px"><table class="wk" style="min-width:520px"><thead><tr>'+
+      '<th>Canal</th><th class="num">Prospectos</th><th class="num">Activos</th>'+
+      '<th class="num">Compró</th><th class="num">No compró</th><th class="num">Cierre</th>'+
+    '</tr></thead><tbody>'+
+    filas.map(f=>'<tr style="cursor:default">'+
+      '<td>'+esc(f.cn)+'</td>'+
+      '<td class="num">'+f.t+'</td>'+
+      '<td class="num">'+(f.activos||'<span class="wk-cero">—</span>')+'</td>'+
+      '<td class="num" style="color:var(--green)">'+(f.compro||'<span class="wk-cero">—</span>')+'</td>'+
+      '<td class="num" style="color:var(--red)">'+(f.no||'<span class="wk-cero">—</span>')+'</td>'+
+      '<td class="num">'+f.tasa+'</td>'+
+    '</tr>').join('')+
+    '</tbody></table></div>';
 }
 
 function renderLeads(){
@@ -1222,6 +1264,7 @@ function renderLeads(){
       '<div class="wk-card"><span class="n" style="color:var(--green)">'+tasa+'</span><span class="t">Cierre</span></div>'+
       '<div class="wk-card"><span class="n" style="color:'+(venc?'var(--red)':'var(--ink)')+'">'+venc+'</span><span class="t">Sin atender</span></div>'+
     '</div>'+
+    canalesHTML()+
     '<div class="lead-add">'+
       '<input id="leadNew" placeholder="Nombre del prospecto y Enter">'+
       '<button class="btn sm" id="leadAdd">AGREGAR</button>'+
