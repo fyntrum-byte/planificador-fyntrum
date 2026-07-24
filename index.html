@@ -109,6 +109,10 @@ input,select,textarea{
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--orange)}
 input::placeholder,textarea::placeholder{color:var(--ink-3)}
 textarea{resize:vertical;min-height:88px;line-height:1.55}
+textarea.grow{
+  min-height:0;height:auto;resize:none;overflow:hidden;
+  line-height:1.45;padding-top:9px;padding-bottom:9px;
+}
 select{
   cursor:pointer;appearance:none;
   background-image:linear-gradient(45deg,transparent 50%,var(--ink-3) 50%),linear-gradient(135deg,var(--ink-3) 50%,transparent 50%);
@@ -517,7 +521,7 @@ function renderDetail(){
         '<input id="f-service" value="'+esc(d.service)+'" placeholder="Qué se empuja hoy"></div>'+
       '<div class="fld"><label>Brazo</label><select id="f-arm">'+opts(ARMS,d.arm)+'</select></div>'+
       '<div class="fld"><label>Público objetivo</label>'+
-        '<input id="f-audience" value="'+esc(d.audience)+'" placeholder="Quién es y qué le duele"></div>'+
+        '<textarea class="grow" id="f-audience" rows="2" placeholder="Quién es y qué le duele">'+esc(d.audience)+'</textarea></div>'+
     '</div>'+
     '<div class="nets">'+NETS.map(n=>{
       const p=d.pieces[n.k],st=STATES.find(s=>s.k===p.status);
@@ -526,7 +530,7 @@ function renderDetail(){
           '<div class="pill" style="color:'+st.c+'">'+st.n.toUpperCase()+'</div></div>'+
         '<div class="nbody">'+
           '<div class="fld"><label>Tema</label>'+
-            '<input data-n="'+n.k+'" data-f="topic" value="'+esc(p.topic)+'" placeholder="De qué habla la pieza"></div>'+
+            '<textarea class="grow" rows="2" data-n="'+n.k+'" data-f="topic" placeholder="De qué habla la pieza">'+esc(p.topic)+'</textarea></div>'+
           '<div class="duo">'+
             '<div class="fld"><label>Formato</label><select data-n="'+n.k+'" data-f="format">'+opts(FORMATS,p.format)+'</select></div>'+
             '<div class="fld"><label>Responsable</label><select data-n="'+n.k+'" data-f="owner">'+opts(OWNERS,p.owner)+'</select></div>'+
@@ -564,6 +568,25 @@ function renderDetail(){
       }
     };
   });
+
+  // Los campos que crecen: se ajustan solos y no aceptan saltos de línea,
+  // porque un salto rompería el formato de la plantilla al exportar.
+  document.getElementById('detail').querySelectorAll('textarea.grow').forEach(el=>{
+    ajustar(el);
+    el.addEventListener('input',()=>ajustar(el));
+    el.addEventListener('keydown',e=>{if(e.key==='Enter')e.preventDefault();});
+    el.addEventListener('paste',()=>setTimeout(()=>{
+      if(/[\r\n]/.test(el.value)){
+        el.value=el.value.replace(/[\r\n]+/g,' ').trim();
+        el.dispatchEvent(new Event('input',{bubbles:true}));
+      }
+    },0));
+  });
+}
+
+function ajustar(el){
+  el.style.height='auto';
+  el.style.height=(el.scrollHeight+2)+'px';
 }
 
 /* ==========================================================
