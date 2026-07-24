@@ -88,6 +88,49 @@ textarea.brief{min-height:96px;line-height:1.55;font-size:12.5px}
 select{cursor:pointer;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink-3) 50%),linear-gradient(135deg,var(--ink-3) 50%,transparent 50%);background-position:calc(100% - 14px) 15px,calc(100% - 9px) 15px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:28px}
 
 /* ---------- contenidos ---------- */
+/* ---------- vista semanal ---------- */
+.vtabs{display:flex;border:1px solid var(--line-2);border-radius:7px;overflow:hidden;margin-left:6px}
+.vtabs button{
+  width:auto;height:30px;padding:0 13px;border:0;border-radius:0;background:transparent;
+  color:var(--ink-3);font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;transition:.15s;
+}
+.vtabs button:hover{color:var(--ink-2);border-color:transparent}
+.vtabs button.on{background:var(--ink);color:#0A0A0B;font-weight:700}
+body.personal .vtabs button.on{background:var(--gold)}
+
+.wk-tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;margin-bottom:20px}
+.wk-card{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.wk-card .n{font-family:'Space Mono',monospace;font-weight:700;font-size:21px;line-height:1;display:block}
+.wk-card .t{font-size:9px;color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase;margin-top:6px;display:block}
+
+.wk-sec{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.06em;margin:22px 0 10px}
+.wk-sec:first-of-type{margin-top:0}
+.wk-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table.wk{width:100%;border-collapse:collapse;font-size:12px;min-width:840px}
+table.wk th{
+  font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);text-align:left;padding:10px 11px;border-bottom:1px solid var(--line);
+  background:var(--panel-2);white-space:nowrap;font-weight:400;
+}
+table.wk th.num,table.wk td.num{text-align:right;font-family:'Space Mono',monospace}
+table.wk td{padding:10px 11px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.wk tr:last-child td{border-bottom:0}
+table.wk tbody tr{cursor:pointer;transition:.12s}
+table.wk tbody tr:hover{background:var(--panel-2)}
+table.wk tr.hoy td{background:rgba(232,93,4,.05)}
+.wk-dia{font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-2);white-space:nowrap}
+.wk-tema{max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk-tema.vacio{color:var(--ink-3)}
+.wk-est{font-family:'Space Mono',monospace;font-size:9px;padding:3px 8px;border-radius:20px;border:1px solid currentColor;white-space:nowrap}
+.wk-pub{font-family:'Space Mono',monospace;font-size:11px}
+.wk-pub.full{color:var(--green)}
+.wk-cero{color:var(--ink-3)}
+.wk-empty{padding:22px;text-align:center;color:var(--ink-3);font-size:12.5px}
+table.wk tfoot td{
+  padding:11px;border-top:1px solid var(--line-2);background:var(--panel-2);
+  font-family:'Space Mono',monospace;font-weight:700;font-size:12px;
+}
+
 /* ---------- pendientes ---------- */
 .pends{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:20px;overflow:hidden}
 .pends-head{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none}
@@ -265,6 +308,10 @@ select{cursor:pointer;appearance:none;background-image:linear-gradient(45deg,tra
       <div class="range" id="range"></div>
       <button id="next" aria-label="Semana siguiente">›</button>
       <button class="wide" id="today">HOY</button>
+      <div class="vtabs">
+        <button id="vDia" class="on">DÍA</button>
+        <button id="vSem">SEMANA</button>
+      </div>
       <div class="tabs" id="tabs">
         <button id="tabFyn" class="on">FYNTRUM</button>
         <button id="tabMio">PERSONAL</button>
@@ -364,6 +411,7 @@ const EV_ESPACIO='fyntrum';
 let evAbiertos={};
 let pendientes=[];
 let pendsOpen=true;
+let vista='dia';
 
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function parseISO(s){const p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
@@ -746,7 +794,8 @@ function render(){
   const end=shift(start,7);
   document.getElementById('range').textContent=
     'LUN '+start.getDate()+' '+MONTHS[start.getMonth()]+' → LUN '+end.getDate()+' '+MONTHS[end.getMonth()]+' '+end.getFullYear();
-  renderStatus();renderPendientes();renderDays();renderDetail();
+  renderStatus();renderPendientes();renderDays();
+  if(vista==='semana')renderSemana(); else renderDetail();
 }
 
 function allSlots(){
@@ -826,6 +875,133 @@ function renderDetail(){
     eventosHTML(d)+
     '<div class="slots">'+SLOTS.map(s=>slotHTML(d.slots[s],s)).join('')+'</div>';
   enlazar();
+}
+
+function sumaPubs(sl,campo){
+  let t=0,hay=false;
+  NETS.forEach(nt=>{
+    const v=sl.pubs[nt.k][campo];
+    if(v!==''&&v!==null&&v!==undefined){t+=Number(v)||0;hay=true;}
+  });
+  return hay?t:null;
+}
+function cel(v){return v===null?'<span class="wk-cero">—</span>':String(v);}
+function nEnt(v){const x=parseInt(String(v).replace(/\D/g,''),10);return isNaN(x)?0:x;}
+
+function renderSemana(){
+  const box=document.getElementById('detail');
+  const filasC=[],filasE=[];
+  const T={cont:0,pub:0,vistas:0,guardados:0,compartidos:0,comentarios:0,leads:0};
+  const E={n:0,asistentes:0,comentarios:0,leads:0,ventas:0};
+
+  for(let i=0;i<8;i++){
+    const k=iso(shift(start,i));
+    const v=data[k];
+    if(!v)continue;
+    const d=parseISO(k);
+    const etq=DAYNAMES[d.getDay()]+' '+d.getDate();
+
+    SLOTS.forEach(si=>{
+      const sl=v.slots[si];
+      if(!sl.tema.trim())return;
+      T.cont++;
+      const st=STATES.find(x=>x.k===sl.estado);
+      const pub=NETS.filter(nt=>sl.pubs[nt.k].link.trim()).length;
+      T.pub+=pub;
+      const m={};
+      ['vistas','guardados','compartidos','comentarios','leads'].forEach(c=>{
+        m[c]=sumaPubs(sl,c);
+        if(m[c]!==null)T[c]+=m[c];
+      });
+      filasC.push('<tr data-ir="'+k+'"'+(k===TODAY?' class="hoy"':'')+'>'+
+        '<td class="wk-dia">'+etq+'</td>'+
+        '<td class="wk-dia">'+si+'</td>'+
+        '<td><div class="wk-tema">'+esc(sl.tema)+'</div></td>'+
+        '<td class="wk-dia">'+esc(sl.formato)+'</td>'+
+        '<td class="wk-dia">'+esc(sl.responsable)+'</td>'+
+        '<td><span class="wk-est" style="color:'+st.c+'">'+st.n.toUpperCase()+'</span></td>'+
+        '<td class="num"><span class="wk-pub'+(pub===3?' full':'')+'">'+pub+'/3</span></td>'+
+        '<td class="num">'+cel(m.vistas)+'</td>'+
+        '<td class="num">'+cel(m.guardados)+'</td>'+
+        '<td class="num">'+cel(m.compartidos)+'</td>'+
+        '<td class="num">'+cel(m.comentarios)+'</td>'+
+        '<td class="num">'+cel(m.leads)+'</td>'+
+      '</tr>');
+    });
+
+    (v.eventos||[]).forEach(ev=>{
+      E.n++;
+      const t=TIPOS.find(x=>x.k===ev.tipo)||TIPOS[1];
+      E.asistentes+=nEnt(ev.asistentes);
+      E.comentarios+=nEnt(ev.comentarios);
+      E.leads+=nEnt(ev.leads);
+      E.ventas+=nEnt(ev.ventas);
+      let conv=0;
+      for(let j=0;j<8;j++){
+        const k2=iso(shift(start,j));
+        if(!data[k2])continue;
+        SLOTS.forEach(sj=>{if(String(data[k2].slots[sj].convoca)===String(ev.id))conv++;});
+      }
+      filasE.push('<tr data-ir="'+k+'"'+(k===TODAY?' class="hoy"':'')+'>'+
+        '<td class="wk-dia">'+etq+'</td>'+
+        '<td class="wk-dia">'+esc(ev.hora_inicio||'--:--')+'</td>'+
+        '<td><span class="wk-est" style="color:'+t.c+'">'+t.n.toUpperCase()+'</span></td>'+
+        '<td><div class="wk-tema'+(ev.titulo?'':' vacio')+'">'+esc(ev.titulo||'Sin título')+'</div></td>'+
+        '<td class="wk-dia">'+esc(ev.estado)+'</td>'+
+        '<td class="num">'+conv+'</td>'+
+        '<td class="num">'+cel(ev.asistentes===''?null:ev.asistentes)+'</td>'+
+        '<td class="num">'+cel(ev.comentarios===''?null:ev.comentarios)+'</td>'+
+        '<td class="num">'+cel(ev.leads===''?null:ev.leads)+'</td>'+
+        '<td class="num">'+cel(ev.ventas===''?null:ev.ventas)+'</td>'+
+      '</tr>');
+    });
+  }
+
+  const leadsTot=T.leads+E.leads;
+  const conv=E.asistentes?((E.leads/E.asistentes)*100).toFixed(1)+'%':'—';
+
+  box.innerHTML=
+    '<div class="wk-tot">'+
+      '<div class="wk-card"><span class="n">'+T.cont+'</span><span class="t">Contenidos</span></div>'+
+      '<div class="wk-card"><span class="n" style="color:var(--blue)">'+T.pub+'</span><span class="t">Publicaciones</span></div>'+
+      '<div class="wk-card"><span class="n">'+T.vistas+'</span><span class="t">Vistas</span></div>'+
+      '<div class="wk-card"><span class="n">'+T.guardados+'</span><span class="t">Guardados</span></div>'+
+      '<div class="wk-card"><span class="n">'+T.compartidos+'</span><span class="t">Compartidos</span></div>'+
+      '<div class="wk-card"><span class="n" style="color:var(--orange)">'+leadsTot+'</span><span class="t">Leads</span></div>'+
+      '<div class="wk-card"><span class="n" style="color:var(--green)">'+E.ventas+'</span><span class="t">Ventas</span></div>'+
+      '<div class="wk-card"><span class="n">'+conv+'</span><span class="t">Asist. a lead</span></div>'+
+    '</div>'+
+
+    '<div class="wk-sec">Contenidos</div>'+
+    (filasC.length
+      ? '<div class="wk-wrap"><table class="wk"><thead><tr>'+
+        '<th>Día</th><th>#</th><th>Tema</th><th>Formato</th><th>Responsable</th><th>Estado</th>'+
+        '<th class="num">Pub</th><th class="num">Vistas</th><th class="num">Guard.</th>'+
+        '<th class="num">Comp.</th><th class="num">Coment.</th><th class="num">Leads</th>'+
+        '</tr></thead><tbody>'+filasC.join('')+'</tbody>'+
+        '<tfoot><tr><td colspan="6">TOTAL</td>'+
+        '<td class="num">'+T.pub+'</td><td class="num">'+T.vistas+'</td>'+
+        '<td class="num">'+T.guardados+'</td><td class="num">'+T.compartidos+'</td>'+
+        '<td class="num">'+T.comentarios+'</td><td class="num">'+T.leads+'</td>'+
+        '</tr></tfoot></table></div>'
+      : '<div class="wk-wrap"><div class="wk-empty">Sin contenidos esta semana.</div></div>')+
+
+    '<div class="wk-sec">Eventos en vivo</div>'+
+    (filasE.length
+      ? '<div class="wk-wrap"><table class="wk" style="min-width:760px"><thead><tr>'+
+        '<th>Día</th><th>Hora</th><th>Tipo</th><th>Título</th><th>Estado</th>'+
+        '<th class="num">Convoca</th><th class="num">Asist.</th><th class="num">Coment.</th>'+
+        '<th class="num">Leads</th><th class="num">Ventas</th>'+
+        '</tr></thead><tbody>'+filasE.join('')+'</tbody>'+
+        '<tfoot><tr><td colspan="6">TOTAL</td>'+
+        '<td class="num">'+E.asistentes+'</td><td class="num">'+E.comentarios+'</td>'+
+        '<td class="num">'+E.leads+'</td><td class="num">'+E.ventas+'</td>'+
+        '</tr></tfoot></table></div>'
+      : '<div class="wk-wrap"><div class="wk-empty">Sin eventos esta semana.</div></div>');
+
+  box.querySelectorAll('[data-ir]').forEach(tr=>{
+    tr.onclick=()=>{sel=tr.dataset.ir;cambiarVista('dia');};
+  });
 }
 
 function alertaHTML(){
@@ -1249,6 +1425,15 @@ function cambiarEspacio(nuevo){
   abiertas={};evAbiertos={};data={};
   cargar();
 }
+function cambiarVista(v){
+  vista=v;
+  document.getElementById('vDia').className = v==='dia'?'on':'';
+  document.getElementById('vSem').className = v==='semana'?'on':'';
+  render();
+}
+document.getElementById('vDia').onclick=()=>cambiarVista('dia');
+document.getElementById('vSem').onclick=()=>cambiarVista('semana');
+
 document.getElementById('tabFyn').onclick=()=>cambiarEspacio('fyntrum');
 document.getElementById('tabMio').onclick=()=>cambiarEspacio(uid);
 
