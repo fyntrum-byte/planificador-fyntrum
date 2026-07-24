@@ -127,6 +127,17 @@ select{cursor:pointer;appearance:none;background-image:linear-gradient(45deg,tra
 .ev-mx .mx-grid{grid-template-columns:repeat(4,1fr)}
 .ev-del{background:none;border:1px solid var(--line-2);color:var(--ink-3);border-radius:5px;padding:5px 10px;cursor:pointer;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.08em}
 .ev-del:hover{border-color:var(--red);color:var(--red)}
+.mini{
+  flex:0 0 auto;width:26px;height:26px;border-radius:5px;
+  border:1px solid var(--line-2);background:transparent;color:var(--ink-3);
+  cursor:pointer;font-size:12px;line-height:1;transition:.15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.mini:hover{border-color:var(--red);color:var(--red)}
+.mini:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.mini.edit:hover{border-color:var(--orange);color:var(--orange)}
+.shead .acts-mini{display:flex;align-items:center;gap:7px}
+.dhead-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .ev-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
 .plats{display:flex;gap:8px}
 .plat{display:flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:10px;color:var(--ink-2);cursor:pointer}
@@ -517,6 +528,31 @@ async function guardarEvento(id){
   flag(error?'err':'ok',error?('No se guardó: '+error.message):'Guardado');
 }
 
+async function limpiarSlot(i){
+  if(!confirm('¿Vaciar el Contenido '+i+' de este día?\n\nSe borran tema, descripción, guion, links y métricas.'))return;
+  flag('busy','Borrando');
+  await sb.from('publicaciones').delete().eq('espacio',espacio).eq('fecha',sel).eq('slot',i);
+  const {error}=await sb.from('contenidos').delete().eq('espacio',espacio).eq('fecha',sel).eq('slot',i);
+  if(error){flag('err','No se pudo borrar: '+error.message);return;}
+  day(sel).slots[i]=blankSlot();
+  flag('ok','Contenido vaciado');
+  renderStatus();renderDays();renderDetail();
+}
+
+async function limpiarDia(){
+  if(!confirm('¿Vaciar todo este día?\n\nSe borran el servicio, el público y los tres contenidos con sus métricas. Los eventos NO se borran.'))return;
+  flag('busy','Borrando');
+  await sb.from('publicaciones').delete().eq('espacio',espacio).eq('fecha',sel);
+  await sb.from('contenidos').delete().eq('espacio',espacio).eq('fecha',sel);
+  const {error}=await sb.from('dias').delete().eq('espacio',espacio).eq('fecha',sel);
+  if(error){flag('err','No se pudo borrar: '+error.message);return;}
+  const evs=day(sel).eventos;
+  data[sel]=blank();
+  data[sel].eventos=evs;
+  flag('ok','Día vaciado');
+  renderStatus();renderDays();renderDetail();
+}
+
 async function crearEvento(){
   flag('busy','Creando');
   const {data:r,error}=await sb.from('eventos').insert({
@@ -647,6 +683,10 @@ function cuando(s){
 function renderDetail(){
   const d=day(sel),dt=parseISO(sel);
   document.getElementById('detail').innerHTML=
+    '<div class="dhead-top">'+
+      '<div class="label">Planificación del día</div>'+
+      '<button class="mini" id="clearDay" title="Vaciar todo este día">🗑</button>'+
+    '</div>'+
     '<div class="dhead">'+
       '<div class="fld"><label>Servicio del día · '+DAYNAMES[dt.getDay()]+' '+dt.getDate()+'</label>'+
         '<input id="f-service" value="'+esc(d.service)+'" placeholder="Qué se empuja hoy"></div>'+
@@ -711,6 +751,8 @@ function evHTML(ev){
       '<div class="ev-hora">'+esc(hora)+'</div>'+
       '<div class="ev-tipo" style="color:'+t.c+'">'+t.n.toUpperCase()+'</div>'+
       '<div class="ev-tit'+(ev.titulo?'':' vacio')+'">'+esc(ev.titulo||'Sin título')+'</div>'+
+      '<button class="mini edit" data-ev-edit="'+ev.id+'" title="Editar">✎</button>'+
+      '<button class="mini" data-ev-del="'+ev.id+'" title="Eliminar evento">🗑</button>'+
       '<div class="ev-arrow">'+(open?'▴':'▾')+'</div>'+
     '</div>'+
     '<div class="ev-body'+(open?' open':'')+'">'+
@@ -734,7 +776,6 @@ function evHTML(ev){
         '<div class="plats">'+PLATS.map(pl=>
           '<label class="plat"><input type="checkbox" data-ev="'+ev.id+'" data-plat="'+pl.k+'"'+(plats.includes(pl.k)?' checked':'')+'>'+pl.n+'</label>'
         ).join('')+'</div>'+
-        '<button class="ev-del" data-ev-del="'+ev.id+'">BORRAR EVENTO</button>'+
       '</div>'+
       '<div class="fld" style="margin-top:10px"><label>Link de la transmisión</label>'+
         '<div class="link-row"><input data-ev="'+ev.id+'" data-f="link" value="'+esc(ev.link)+'" placeholder="Link de YouTube o TikTok">'+
@@ -755,7 +796,10 @@ function slotHTML(s,i){
   const st=STATES.find(x=>x.k===s.estado);
   return '<div class="slot">'+
     '<div class="shead"><div class="sname">CONTENIDO '+i+'</div>'+
-      '<div class="pill" style="color:'+st.c+'">'+st.n.toUpperCase()+'</div></div>'+
+      '<div class="acts-mini">'+
+        '<div class="pill" style="color:'+st.c+'">'+st.n.toUpperCase()+'</div>'+
+        '<button class="mini" data-clear="'+i+'" title="Vaciar este contenido">🗑</button>'+
+      '</div></div>'+
     '<div class="sbody">'+
       '<div class="fld"><label>Tema</label>'+
         '<textarea class="grow" rows="2" data-s="'+i+'" data-f="tema" placeholder="El titular de la pieza">'+esc(s.tema)+'</textarea></div>'+
@@ -853,6 +897,24 @@ function enlazar(){
   box.querySelectorAll('[data-ev-del]').forEach(b=>{
     b.onclick=e=>{e.stopPropagation();borrarEvento(b.dataset.evDel);};
   });
+
+  box.querySelectorAll('[data-ev-edit]').forEach(b=>{
+    b.onclick=e=>{
+      e.stopPropagation();
+      const id=b.dataset.evEdit;
+      evAbiertos[id]=true;
+      renderDetail();
+      const c=document.querySelector('[data-ev="'+id+'"][data-f="titulo"]');
+      if(c)c.focus();
+    };
+  });
+
+  box.querySelectorAll('[data-clear]').forEach(b=>{
+    b.onclick=()=>limpiarSlot(b.dataset.clear);
+  });
+
+  const cd=document.getElementById('clearDay');
+  if(cd)cd.onclick=limpiarDia;
 
   box.querySelectorAll('[data-ev][data-f]').forEach(el=>{
     el.oninput=el.onchange=()=>{
