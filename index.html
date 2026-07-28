@@ -1629,9 +1629,10 @@ async function cargarPlantilla(txt){
       return;
     }
     const c=l.split('|').map(x=>x.trim());
-    const n=parseInt(c[0],10);
-    if([1,2,3].includes(n)&&c.length>1){
+    const esSlot=/^[1-3]$/.test(c[0]);
+    if(esSlot&&c.length>1){
       if(!curDia)return;
+      const n=parseInt(c[0],10);
       curSlot=n;
       const s=day(curDia).slots[n];
       s.formato=pick(FORMATS,c[1])||s.formato;
