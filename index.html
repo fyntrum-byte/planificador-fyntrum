@@ -1654,7 +1654,7 @@ async function cargarPlantilla(txt){
     fecha:f,espacio,servicio:data[f].service,brazo:data[f].arm,
     publico:data[f].audience,actualizado_en:new Date().toISOString()
   }));
-  const e1=await sb.from('dias').upsert(filasDia);
+  const e1=await sb.from('dias').upsert(filasDia,{onConflict:'fecha,espacio'});
   if(e1.error){flag('err','No se guardó: '+e1.error.message);return {ok:false,motivo:'guardado',msg:e1.error.message};}
   const filasSlot=slots.map(([f,i])=>{
     const s=data[f].slots[i];
@@ -1663,7 +1663,7 @@ async function cargarPlantilla(txt){
       actualizado_por:usuario,actualizado_en:new Date().toISOString()};
   });
   if(filasSlot.length){
-    const e2=await sb.from('contenidos').upsert(filasSlot);
+    const e2=await sb.from('contenidos').upsert(filasSlot,{onConflict:'fecha,espacio,slot'});
     if(e2.error){flag('err','No se guardó: '+e2.error.message);return {ok:false,motivo:'guardado',msg:e2.error.message};}
   }
   flag('ok','Guardado');
