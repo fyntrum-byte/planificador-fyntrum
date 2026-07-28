@@ -1656,7 +1656,8 @@ async function cargarPlantilla(txt){
   }));
   const e1=await sb.from('dias').upsert(filasDia,{onConflict:'fecha,espacio'});
   if(e1.error){flag('err','No se guardó: '+e1.error.message);return {ok:false,motivo:'guardado',msg:e1.error.message};}
-  const filasSlot=slots.map(([f,i])=>{
+  const slotsUnicos=[...new Map(slots.map(p=>[p[0]+'|'+p[1],p])).values()];
+  const filasSlot=slotsUnicos.map(([f,i])=>{
     const s=data[f].slots[i];
     return {fecha:f,espacio,slot:i,tema:s.tema,descripcion:s.desc,formato:s.formato,
       responsable:s.responsable,estado:s.estado,guion:s.guion,
@@ -1667,7 +1668,7 @@ async function cargarPlantilla(txt){
     if(e2.error){flag('err','No se guardó: '+e2.error.message);return {ok:false,motivo:'guardado',msg:e2.error.message};}
   }
   flag('ok','Guardado');
-  return {ok:true,nd:dias.size,np:slots.length};
+  return {ok:true,nd:dias.size,np:slotsUnicos.length};
 }
 
 function exportarPlantilla(){
